@@ -51,7 +51,7 @@ def user_profile_picture_file_path(instance, filename):
 
 class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
-    born = models.DateField(null=True)
+    date_of_birth = models.DateField(null=True)
     bio = models.CharField(max_length=150, blank=True)
     location = models.CharField(max_length=60, blank=True)
     website = models.URLField(max_length=100, blank=True)
