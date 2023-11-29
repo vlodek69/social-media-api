@@ -5,7 +5,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from user.serializers import (
     UserSerializer,
     ManageUserSerializer,
-    ManageUserPasswordSerializer,
+    UpdateUserPasswordSerializer,
+    UpdateUserProfilePictureSerializer,
 )
 
 
@@ -23,9 +24,13 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
 
 
 class UpdateUserPasswordView(generics.UpdateAPIView):
-    serializer_class = ManageUserPasswordSerializer
+    serializer_class = UpdateUserPasswordSerializer
     authentication_classes = (JWTAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self):
         return self.request.user
+
+
+class UpdateUserProfilePictureView(ManageUserView):
+    serializer_class = UpdateUserProfilePictureSerializer
