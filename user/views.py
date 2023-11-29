@@ -21,7 +21,7 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-class ManageUserPasswordView(generics.UpdateAPIView):
+class UpdateUserPasswordView(generics.UpdateAPIView):
     serializer_class = ManageUserPasswordSerializer
     authentication_classes = (JWTAuthentication,)
     permission_classes = (IsAuthenticated,)
