@@ -4,7 +4,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from user.serializers import (
     UserSerializer,
-    ManageUserSerializer, ManageUserPasswordSerializer
+    ManageUserSerializer,
+    ManageUserPasswordSerializer,
 )
 
 
