@@ -9,6 +9,17 @@ class UserListSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "full_name",
+            "profile_picture",
+        )
+
+
+class UserDetailSerializer(UserListSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "username",
+            "full_name",
             "bio",
             "location",
             "website",
