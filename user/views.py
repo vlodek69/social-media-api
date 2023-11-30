@@ -44,4 +44,4 @@ class BlacklistRefreshView(APIView):
     def post(self, request):
         token = RefreshToken(request.data.get("refresh"))
         token.blacklist()
-        return Response("Success")
+        return Response("Token invalidated")
