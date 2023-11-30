@@ -45,11 +45,14 @@ def user_profile_picture_file_path(instance, filename):
     _, extension = os.path.splitext(filename)
     filename = f"{slugify(instance.username)}-{uuid.uuid4()}{extension}"
 
-    return os.path.join(f"uploads/users/{instance.username}/profile_picture/", filename)
+    return os.path.join(
+        f"uploads/users/{instance.username}/profile_picture/", filename
+    )
 
 
 class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
+    full_name = models.CharField(blank=True, max_length=150)
     date_of_birth = models.DateField(null=True)
     bio = models.CharField(max_length=150, blank=True)
     location = models.CharField(max_length=60, blank=True)
