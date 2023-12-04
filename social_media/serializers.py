@@ -14,6 +14,9 @@ class UserListSerializer(serializers.ModelSerializer):
 
 
 class UserDetailSerializer(UserListSerializer):
+    subscribed_to = UserListSerializer(many=True)
+    subscribers = UserListSerializer(many=True)
+
     class Meta:
         model = get_user_model()
         fields = (
@@ -25,6 +28,7 @@ class UserDetailSerializer(UserListSerializer):
             "website",
             "profile_picture",
             "subscribed_to",
+            "subscribers",
         )
 
 

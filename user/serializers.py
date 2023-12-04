@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from social_media.serializers import UserListSerializer
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -44,10 +46,12 @@ class ManageUserSerializer(UserSerializer):
             "location",
             "website",
             "profile_picture",
-            "subscribed_to",
             "is_staff",
         )
-        read_only_fields = ("is_staff", "subscribed_to", "profile_picture")
+        read_only_fields = (
+            "is_staff",
+            "profile_picture",
+        )
 
 
 class UpdateUserPasswordSerializer(serializers.ModelSerializer):

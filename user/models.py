@@ -1,10 +1,12 @@
 import os
 import uuid
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
+from django.forms.models import model_to_dict
 
 
 class UserManager(BaseUserManager):
@@ -60,9 +62,17 @@ class User(AbstractUser):
     profile_picture = models.ImageField(
         null=True, upload_to=user_profile_picture_file_path
     )
-    subscribed_to = models.ManyToManyField("self", blank=True, symmetrical=False)
+    subscribed_to = models.ManyToManyField(
+        "self", blank=True, symmetrical=False
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+    @property
+    def subscribers(self):
+        data = get_user_model().objects.filter(subscribed_to=self)
+        serialized_data = [model_to_dict(item) for item in data]
+        return serialized_data
