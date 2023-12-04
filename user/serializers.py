@@ -41,6 +41,7 @@ class ManageUserSerializer(UserSerializer):
             "id",
             "email",
             "username",
+            "full_name",
             "date_of_birth",
             "bio",
             "location",
