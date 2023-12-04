@@ -10,6 +10,7 @@ class UserListSerializer(serializers.ModelSerializer):
             "username",
             "full_name",
             "profile_picture",
+            "subscribers_count",
         )
 
 
@@ -28,6 +29,7 @@ class UserDetailSerializer(UserListSerializer):
             "website",
             "profile_picture",
             "subscribed_to",
+            "subscribers_count",
             "subscribers",
         )
 

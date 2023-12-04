@@ -76,3 +76,8 @@ class User(AbstractUser):
         data = get_user_model().objects.filter(subscribed_to=self)
         serialized_data = [model_to_dict(item) for item in data]
         return serialized_data
+
+    @property
+    def subscribers_count(self):
+        subscribers = get_user_model().objects.filter(subscribed_to=self)
+        return subscribers.count()
