@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.shortcuts import render
 from rest_framework import mixins, status
 from rest_framework.decorators import action
@@ -17,7 +18,6 @@ class UserViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet
 ):
     queryset = get_user_model().objects.all()
-    # permission_classes = ()
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -27,6 +27,23 @@ class UserViewSet(
             return UserSubscriptionSerializer
 
         return UserListSerializer
+
+    def get_queryset(self):
+        """Filtering users by username or full name and by location"""
+        user = self.request.query_params.get("user")
+        location = self.request.query_params.get("location")
+
+        queryset = self.queryset
+
+        if user:
+            queryset = queryset.filter(
+                Q(username__icontains=user) | Q(full_name__icontains=user)
+            )
+
+        if location:
+            queryset = queryset.filter(location__icontains=location)
+
+        return queryset
 
     @action(
         methods=["GET"],
