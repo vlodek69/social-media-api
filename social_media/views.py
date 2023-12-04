@@ -6,8 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from social_media.serializers import UserListSerializer, UserDetailSerializer, \
-    UserSubscriptionSerializer
+from social_media.serializers import (
+    UserListSerializer,
+    UserDetailSerializer,
+    UserSubscriptionSerializer,
+)
 
 
 class UserViewSet(
@@ -37,10 +40,14 @@ class UserViewSet(
         subscribe_to = self.get_object()
 
         if subscribe_to in user_subscriptions.all():
-            return Response("Already subscribed", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "Already subscribed", status=status.HTTP_400_BAD_REQUEST
+            )
 
         if subscribe_to == self.request.user:
-            return Response("Wil not subscribe to self", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "Wil not subscribe to self", status=status.HTTP_400_BAD_REQUEST
+            )
 
         user_subscriptions.add(subscribe_to)
         return Response("Subscribed!", status=status.HTTP_200_OK)
@@ -57,8 +64,9 @@ class UserViewSet(
         unsubscribe_from = self.get_object()
 
         if unsubscribe_from not in user_subscriptions.all():
-            return Response("Not subscribed", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "Not subscribed", status=status.HTTP_400_BAD_REQUEST
+            )
 
         user_subscriptions.remove(unsubscribe_from)
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
-
