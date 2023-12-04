@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from django.shortcuts import render
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, \
@@ -9,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from social_media.models import Post
+from social_media.permissions import IsOwnerOrReadOnly
 from social_media.serializers import (
     UserListSerializer,
     UserDetailSerializer,
@@ -97,7 +97,7 @@ class PostViewSet(
 ):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
