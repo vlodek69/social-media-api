@@ -60,7 +60,7 @@ class User(AbstractUser):
     profile_picture = models.ImageField(
         null=True, upload_to=user_profile_picture_file_path
     )
-    subscribed_to = models.ManyToManyField("self", blank=True)
+    subscribed_to = models.ManyToManyField("self", blank=True, symmetrical=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

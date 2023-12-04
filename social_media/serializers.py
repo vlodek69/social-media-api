@@ -26,3 +26,9 @@ class UserDetailSerializer(UserListSerializer):
             "profile_picture",
             "subscribed_to",
         )
+
+
+class UserSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ()
