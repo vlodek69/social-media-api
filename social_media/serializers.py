@@ -45,7 +45,7 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ("id", "text", "media", "user")
+        fields = ("id", "created_at", "text", "media", "user")
         read_only_fields = ["user"]
 
     # def create(self, validated_data):
