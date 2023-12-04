@@ -1,16 +1,19 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import render
-from rest_framework import mixins, status
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, \
+    IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from social_media.models import Post
 from social_media.serializers import (
     UserListSerializer,
     UserDetailSerializer,
     UserSubscriptionSerializer,
+    PostSerializer,
 )
 
 
@@ -87,3 +90,14 @@ class UserViewSet(
 
         user_subscriptions.remove(unsubscribe_from)
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
+
+
+class PostViewSet(
+    viewsets.ModelViewSet
+):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from social_media.models import Post
+
 
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,3 +40,14 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ()
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("id", "text", "media", "user")
+        read_only_fields = ["user"]
+
+    # def create(self, validated_data):
+    #     post = Post.objects.create(**validated_data)
+    #     post.user = Response
