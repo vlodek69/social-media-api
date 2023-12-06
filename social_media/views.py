@@ -161,6 +161,7 @@ class PostViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def subscriptions(self, request, pk=None):
+        """Endpoint for displaying posts of only subscribed to users"""
         return super().list(request)
 
     def update(self, request, *args, **kwargs):
