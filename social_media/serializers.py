@@ -58,9 +58,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class CommentListSerializer(serializers.ModelSerializer):
     user = UserPostSerializer(read_only=True)
     url = serializers.HyperlinkedIdentityField(
-        many=False,
-        view_name="social_media:comment-detail",
-        read_only=True
+        many=False, view_name="social_media:comment-detail", read_only=True
     )
 
     class Meta:
@@ -77,6 +75,21 @@ class PostSerializer(serializers.ModelSerializer):
 
 class PostListSerializer(PostSerializer):
     user = UserPostSerializer(read_only=True)
+    url = serializers.HyperlinkedIdentityField(
+        many=False, read_only=True, view_name="social_media:post-detail"
+    )
+
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "created_at",
+            "user",
+            "text",
+            "media",
+            "comments_count",
+            "url",
+        )
 
 
 class CommentDetailSerializer(CommentSerializer):

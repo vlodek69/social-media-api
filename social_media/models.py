@@ -29,6 +29,10 @@ class Post(BasePost):
         get_user_model(), on_delete=models.CASCADE, related_name="posts"
     )
 
+    @property
+    def comments_count(self):
+        return self.comments.all().count()
+
 
 class Comment(BasePost):
     user = models.ForeignKey(
