@@ -98,16 +98,12 @@ class UserViewSet(
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
-    # serializer_class = PostSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
     )
 
     def perform_create(self, serializer):
-        if serializer == CommentSerializer:
-            serializer.save(user=self.request.user, post=self.get_object())
-
         serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
@@ -126,7 +122,6 @@ class PostViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def comment(self, request, pk=None):
-        # post = self.get_object()
         comment = self.get_serializer(data=request.data)
 
         if comment.is_valid():
@@ -134,9 +129,3 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(comment.data, status=status.HTTP_200_OK)
 
         return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class CommentVieSet(Post):
-#     queryset = Comment.objects.all()
-#
-#     def perform_create(self):
