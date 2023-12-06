@@ -101,9 +101,11 @@ class UserViewSet(
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
 
 
-def can_edit(obj):
+def can_edit(obj: Post | Comment, minutes_to_edit: int = 5) -> bool:
+    """Returns True if Post/Comment was created less than 'minutes_to_edit'
+    minutes ago"""
     return datetime.now(tz=timezone("UTC")) - obj.created_at < timedelta(
-        minutes=5
+        minutes=minutes_to_edit
     )
 
 
@@ -115,6 +117,8 @@ class PostViewSet(viewsets.ModelViewSet):
     )
 
     def get_queryset(self):
+        """Filter posts to show only post of users the authenticated user is
+        subscribed to"""
         queryset = self.queryset
 
         if self.action == "subscriptions":
@@ -125,6 +129,8 @@ class PostViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        """Create Post instance with currently authenticated user as value in
+        'user' field"""
         serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
@@ -146,6 +152,8 @@ class PostViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def comment(self, request, pk=None):
+        """Endpoint for creating new Comment with prefilled 'user' and 'post'
+        fields"""
         comment = self.get_serializer(data=request.data)
 
         if comment.is_valid():
@@ -165,6 +173,7 @@ class PostViewSet(viewsets.ModelViewSet):
         return super().list(request)
 
     def update(self, request, *args, **kwargs):
+        """Allow update only for 5 minutes after Post creation"""
         if can_edit(self.get_object()):
             return super().update(request, *args, **kwargs)
 
@@ -192,6 +201,7 @@ class CommentViewSet(
         return CommentSerializer
 
     def update(self, request, *args, **kwargs):
+        """Allow update only for 5 minutes after Comment creation"""
         if can_edit(self.get_object()):
             return super().update(request, *args, **kwargs)
 
