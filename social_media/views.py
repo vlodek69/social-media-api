@@ -114,12 +114,23 @@ class PostViewSet(viewsets.ModelViewSet):
         IsOwnerOrReadOnly,
     )
 
+    def get_queryset(self):
+        queryset = self.queryset
+
+        if self.action == "subscriptions":
+            queryset = queryset.filter(
+                user__in=self.request.user.subscribed_to.all()
+            )
+
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.action in ("list", "subscriptions"):
             return PostListSerializer
+
         if self.action == "retrieve":
             return PostDetailSerializer
 
@@ -142,6 +153,15 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(comment.data, status=status.HTTP_200_OK)
 
         return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="my-feed",
+        permission_classes=[IsAuthenticated],
+    )
+    def subscriptions(self, request, pk=None):
+        return super().list(request)
 
     def update(self, request, *args, **kwargs):
         if can_edit(self.get_object()):
