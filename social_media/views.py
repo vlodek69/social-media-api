@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from pytz import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
@@ -98,6 +101,12 @@ class UserViewSet(
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
 
 
+def can_edit(obj):
+    return datetime.now(tz=timezone("UTC")) - obj.created_at < timedelta(
+        minutes=5
+    )
+
+
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     permission_classes = (
@@ -134,6 +143,14 @@ class PostViewSet(viewsets.ModelViewSet):
 
         return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def update(self, request, *args, **kwargs):
+        if can_edit(self.get_object()):
+            return super().update(request, *args, **kwargs)
+
+        return Response(
+            {"Cannot edit after 5 minutes"}, status=status.HTTP_403_FORBIDDEN
+        )
+
 
 class CommentViewSet(
     mixins.RetrieveModelMixin,
@@ -152,3 +169,11 @@ class CommentViewSet(
             return CommentDetailSerializer
 
         return CommentSerializer
+
+    def update(self, request, *args, **kwargs):
+        if can_edit(self.get_object()):
+            return super().update(request, *args, **kwargs)
+
+        return Response(
+            {"Cannot edit after 5 minutes"}, status=status.HTTP_403_FORBIDDEN
+        )
