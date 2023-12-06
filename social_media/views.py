@@ -18,6 +18,8 @@ from social_media.serializers import (
     PostSerializer,
     CommentSerializer,
     PostDetailSerializer,
+    CommentDetailSerializer,
+    PostListSerializer,
 )
 
 
@@ -107,6 +109,8 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
+        if self.action == "list":
+            return PostListSerializer
         if self.action == "retrieve":
             return PostDetailSerializer
 
@@ -129,3 +133,22 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(comment.data, status=status.HTTP_200_OK)
 
         return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CommentViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
+    queryset = Comment.objects.all()
+    permission_classes = (
+        IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly,
+    )
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return CommentDetailSerializer
+
+        return CommentSerializer

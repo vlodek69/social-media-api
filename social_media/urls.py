@@ -1,12 +1,13 @@
 from django.urls import path
 from rest_framework import routers
 
-from social_media.views import UserViewSet, PostViewSet
+from social_media.views import UserViewSet, PostViewSet, CommentViewSet
 
 router = routers.DefaultRouter()
 
 router.register("users", UserViewSet)
 router.register("posts", PostViewSet)
+router.register("comments", CommentViewSet)
 
 urlpatterns = router.urls
 

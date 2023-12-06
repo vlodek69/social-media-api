@@ -16,6 +16,12 @@ class UserListSerializer(serializers.ModelSerializer):
         )
 
 
+class UserPostSerializer(UserListSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "profile_picture", "full_name", "username")
+
+
 class UserDetailSerializer(UserListSerializer):
     subscribed_to = UserListSerializer(many=True)
     subscribers = UserListSerializer(many=True)
@@ -42,13 +48,6 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
         fields = ()
 
 
-class PostSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Post
-        fields = ("id", "created_at", "text", "media", "user")
-        read_only_fields = ["user"]
-
-
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
@@ -57,16 +56,35 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class CommentListSerializer(serializers.ModelSerializer):
+    user = UserPostSerializer(read_only=True)
+
     class Meta:
         model = Comment
         fields = ("id", "created_at", "text", "media", "user")
         read_only_fields = ["user"]
 
 
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("id", "created_at", "text", "media", "user")
+        read_only_fields = ["user"]
+
+
+class PostListSerializer(PostSerializer):
+    user = UserPostSerializer(read_only=True)
+
+
+class CommentDetailSerializer(CommentSerializer):
+    user = UserPostSerializer(read_only=True)
+    post = PostListSerializer(read_only=True)
+
+
 class PostDetailSerializer(PostSerializer):
+    user = UserPostSerializer(read_only=True)
     comments = CommentListSerializer(many=True)
 
     class Meta:
         model = Post
-        fields = ("id", "created_at", "text", "media", "user", "comments")
+        fields = ("id", "user", "created_at", "text", "media", "comments")
         read_only_fields = ["user", "comments"]
