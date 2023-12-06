@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from social_media.models import Post
+from social_media.models import Post, Comment
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -48,6 +48,25 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ("id", "created_at", "text", "media", "user")
         read_only_fields = ["user"]
 
-    # def create(self, validated_data):
-    #     post = Post.objects.create(**validated_data)
-    #     post.user = Response
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("id", "created_at", "text", "media", "user", "post")
+        read_only_fields = ["user", "post"]
+
+
+class CommentListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("id", "created_at", "text", "media", "user")
+        read_only_fields = ["user"]
+
+
+class PostDetailSerializer(PostSerializer):
+    comments = CommentListSerializer(many=True)
+
+    class Meta:
+        model = Post
+        fields = ("id", "created_at", "text", "media", "user", "comments")
+        read_only_fields = ["user", "comments"]

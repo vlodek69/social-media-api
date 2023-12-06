@@ -54,7 +54,7 @@ def user_profile_picture_file_path(instance, filename):
 
 class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
-    full_name = models.CharField(blank=True, max_length=150)
+    full_name = models.CharField(blank=True, null=True, max_length=150)
     date_of_birth = models.DateField(null=True)
     bio = models.CharField(max_length=150, blank=True)
     location = models.CharField(max_length=60, blank=True)

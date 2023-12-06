@@ -14,11 +14,26 @@ def post_file_path(instance, filename):
     )
 
 
-class Post(models.Model):
+class BasePost(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     text = models.CharField(max_length=144)
     media = models.ImageField(blank=True, upload_to=post_file_path)
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="posts")
 
     class Meta:
         ordering = ["-created_at"]
+        abstract = True
+
+
+class Post(BasePost):
+    user = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="posts"
+    )
+
+
+class Comment(BasePost):
+    user = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="comments"
+    )
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name="comments"
+    )

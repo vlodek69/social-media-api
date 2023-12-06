@@ -2,18 +2,22 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, \
-    IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from social_media.models import Post
+from social_media.models import Post, Comment
 from social_media.permissions import IsOwnerOrReadOnly
 from social_media.serializers import (
     UserListSerializer,
     UserDetailSerializer,
     UserSubscriptionSerializer,
     PostSerializer,
+    CommentSerializer,
+    PostDetailSerializer,
 )
 
 
@@ -92,12 +96,47 @@ class UserViewSet(
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
 
 
-class PostViewSet(
-    viewsets.ModelViewSet
-):
+class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
+    # serializer_class = PostSerializer
+    permission_classes = (
+        IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly,
+    )
 
     def perform_create(self, serializer):
+        if serializer == CommentSerializer:
+            serializer.save(user=self.request.user, post=self.get_object())
+
         serializer.save(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return PostDetailSerializer
+
+        if self.action == "comment":
+            return CommentSerializer
+
+        return PostSerializer
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="comment",
+        permission_classes=[IsAuthenticated],
+    )
+    def comment(self, request, pk=None):
+        # post = self.get_object()
+        comment = self.get_serializer(data=request.data)
+
+        if comment.is_valid():
+            comment.save(user=self.request.user, post=self.get_object())
+            return Response(comment.data, status=status.HTTP_200_OK)
+
+        return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class CommentVieSet(Post):
+#     queryset = Comment.objects.all()
+#
+#     def perform_create(self):
