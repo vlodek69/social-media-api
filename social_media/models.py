@@ -23,6 +23,10 @@ class BasePost(models.Model):
         ordering = ["-created_at"]
         abstract = True
 
+    @property
+    def likes_count(self):
+        return self.users_liked.all().count()
+
 
 class Post(BasePost):
     user = models.ForeignKey(
