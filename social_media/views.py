@@ -158,9 +158,18 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         IsOwnerOrReadOnly,
     )
 
+    def get_liked_posts(self, queryset):
+        """Returns queryset with liked posts and posts that have liked
+        comments"""
+        liked_posts = self.request.user.liked_posts.all()
+        liked_comment_posts = queryset.filter(
+            comments__in=self.request.user.liked_comments.all()
+        )
+        return liked_comment_posts.union(liked_posts)
+
+
     def get_queryset(self):
-        """Filter posts to show only post of users the authenticated user is
-        subscribed to"""
+        """Filter posts by subscriptions and likes"""
         queryset = self.queryset
 
         if self.action == "subscriptions":
@@ -168,7 +177,10 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
                 user__in=self.request.user.subscribed_to.all()
             )
 
-        return queryset
+        if self.action == "liked":
+            queryset = self.get_liked_posts(queryset)
+
+        return queryset.order_by("-created_at")
 
     def perform_create(self, serializer):
         """Create Post instance with currently authenticated user as value in
@@ -176,7 +188,7 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
-        if self.action in ("list", "subscriptions"):
+        if self.action in ("list", "subscriptions", "liked"):
             return PostListSerializer
 
         if self.action == "retrieve":
@@ -212,6 +224,16 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     )
     def subscriptions(self, request, pk=None):
         """Endpoint for displaying posts of only subscribed to users"""
+        return super().list(request)
+
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="liked",
+        permission_classes=[IsAuthenticated],
+    )
+    def liked(self, request, pk=None):
+        """Endpoint for displaying liked posts"""
         return super().list(request)
 
     def update(self, request, *args, **kwargs):

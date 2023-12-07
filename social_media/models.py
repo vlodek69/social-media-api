@@ -20,7 +20,6 @@ class BasePost(models.Model):
     media = models.ImageField(blank=True, upload_to=post_file_path)
 
     class Meta:
-        ordering = ["-created_at"]
         abstract = True
 
     @property
