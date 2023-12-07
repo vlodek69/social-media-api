@@ -1,8 +1,7 @@
 import os
 import uuid
 
-# from django.contrib.auth import get_user_model
-from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.text import slugify
@@ -82,13 +81,11 @@ class User(AbstractUser):
 
     @property
     def subscribers(self):
-        data = settings.AUTH_USER_MODEL.objects.filter(subscribed_to=self)
+        data = get_user_model().objects.filter(subscribed_to=self)
         serialized_data = [model_to_dict(item) for item in data]
         return serialized_data
 
     @property
     def subscribers_count(self):
-        subscribers = settings.AUTH_USER_MODEL.objects.filter(
-            subscribed_to=self
-        )
+        subscribers = get_user_model().objects.filter(subscribed_to=self)
         return subscribers.count()
