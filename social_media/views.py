@@ -109,7 +109,49 @@ def can_edit(obj: Post | Comment, minutes_to_edit: int = 5) -> bool:
     )
 
 
-class PostViewSet(viewsets.ModelViewSet):
+class LikeMixin:
+    def get_user_liked_posts(self):
+        # This method should be overridden in the view set
+        return self.request.user.liked_posts
+
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="like",
+        permission_classes=[IsAuthenticated],
+    )
+    def like(self, request, pk=None):
+        """Endpoint for adding post to your liked_posts"""
+        user_liked_posts = self.get_user_liked_posts()
+        post = self.get_object()
+
+        if post in user_liked_posts.all():
+            return Response(
+                "Already liked", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user_liked_posts.add(post)
+        return Response("Liked!", status=status.HTTP_200_OK)
+
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="unlike",
+        permission_classes=[IsAuthenticated],
+    )
+    def unlike(self, request, pk=None):
+        """Endpoint for removing post from your liked_posts"""
+        user_liked_posts = self.get_user_liked_posts()
+        post = self.get_object()
+
+        if post not in user_liked_posts.all():
+            return Response("Not liked", status=status.HTTP_400_BAD_REQUEST)
+
+        user_liked_posts.remove(post)
+        return Response("Unliked!", status=status.HTTP_200_OK)
+
+
+class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     queryset = Post.objects.all()
     permission_classes = (
         IsAuthenticatedOrReadOnly,
@@ -172,42 +214,6 @@ class PostViewSet(viewsets.ModelViewSet):
         """Endpoint for displaying posts of only subscribed to users"""
         return super().list(request)
 
-    @action(
-        methods=["GET"],
-        detail=True,
-        url_path="like",
-        permission_classes=[IsAuthenticated],
-    )
-    def like(self, request, pk=None):
-        """Endpoint for adding post to your liked_posts"""
-        user_liked_posts = self.request.user.liked_posts
-        post = self.get_object()
-
-        if post in user_liked_posts.all():
-            return Response(
-                "Already liked", status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user_liked_posts.add(post)
-        return Response("Liked!", status=status.HTTP_200_OK)
-
-    @action(
-        methods=["GET"],
-        detail=True,
-        url_path="unlike",
-        permission_classes=[IsAuthenticated],
-    )
-    def unlike(self, request, pk=None):
-        """Endpoint for removing post from your liked_posts"""
-        user_liked_posts = self.request.user.liked_posts
-        post = self.get_object()
-
-        if post not in user_liked_posts.all():
-            return Response("Not liked", status=status.HTTP_400_BAD_REQUEST)
-
-        user_liked_posts.remove(post)
-        return Response("Unliked!", status=status.HTTP_200_OK)
-
     def update(self, request, *args, **kwargs):
         """Allow update only for 5 minutes after Post creation"""
         if can_edit(self.get_object()):
@@ -219,6 +225,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(
+    LikeMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
@@ -229,6 +236,9 @@ class CommentViewSet(
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
     )
+
+    def get_user_liked_posts(self):
+        return self.request.user.liked_comments
 
     def get_serializer_class(self):
         if self.action == "retrieve":
