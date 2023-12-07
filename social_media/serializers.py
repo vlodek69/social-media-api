@@ -30,15 +30,15 @@ class UserDetailSerializer(UserListSerializer):
         model = get_user_model()
         fields = (
             "id",
+            "profile_picture",
             "username",
             "full_name",
             "bio",
             "location",
             "website",
-            "profile_picture",
-            "subscribed_to",
             "subscribers_count",
             "subscribers",
+            "subscribed_to",
         )
 
 
