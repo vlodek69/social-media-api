@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db import models
 
 
@@ -26,7 +26,9 @@ class BasePost(models.Model):
 
 class Post(BasePost):
     user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name="posts"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="posts",
     )
 
     @property
@@ -36,7 +38,9 @@ class Post(BasePost):
 
 class Comment(BasePost):
     user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name="comments"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comments",
     )
     post = models.ForeignKey(
         Post, on_delete=models.CASCADE, related_name="comments"

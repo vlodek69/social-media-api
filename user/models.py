@@ -1,12 +1,15 @@
 import os
 import uuid
 
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.forms.models import model_to_dict
+
+from social_media.models import Post, Comment
 
 
 class UserManager(BaseUserManager):
@@ -65,6 +68,12 @@ class User(AbstractUser):
     subscribed_to = models.ManyToManyField(
         "self", blank=True, symmetrical=False
     )
+    liked_posts = models.ManyToManyField(
+        Post, blank=True, related_name="users_liked"
+    )
+    liked_comments = models.ManyToManyField(
+        Comment, blank=True, related_name="users_liked"
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -73,11 +82,13 @@ class User(AbstractUser):
 
     @property
     def subscribers(self):
-        data = get_user_model().objects.filter(subscribed_to=self)
+        data = settings.AUTH_USER_MODEL.objects.filter(subscribed_to=self)
         serialized_data = [model_to_dict(item) for item in data]
         return serialized_data
 
     @property
     def subscribers_count(self):
-        subscribers = get_user_model().objects.filter(subscribed_to=self)
+        subscribers = settings.AUTH_USER_MODEL.objects.filter(
+            subscribed_to=self
+        )
         return subscribers.count()
