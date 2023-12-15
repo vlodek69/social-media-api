@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
 from pytz import timezone
 from rest_framework import mixins, status, viewsets
