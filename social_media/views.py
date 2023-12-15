@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from pytz import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -101,6 +103,29 @@ class UserViewSet(
 
         user_subscriptions.remove(unsubscribe_from)
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "user",
+                type=OpenApiTypes.STR,
+                description=(
+                        "Filter by username or full name "
+                        "(ex. ?user=John+Doe)"
+                ),
+            ),
+            OpenApiParameter(
+                "location",
+                type=OpenApiTypes.STR,
+                description=(
+                        "Filter by user's location "
+                        "(ex. ?location=Kyiv)"
+                ),
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 def can_edit(obj: Post | Comment, minutes_to_edit: int = 5) -> bool:
