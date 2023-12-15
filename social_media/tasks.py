@@ -23,6 +23,7 @@ def open_and_read_file(file_path):
 
 @shared_task
 def schedule_post_create(user_id, request_data, media_path):
+    """Validates data and creates Post instance"""
     storage = FileSystemStorage()
     serializer = PostSerializer(data=request_data)
 

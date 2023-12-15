@@ -157,12 +157,15 @@ class LikeMixin:
 
 
 def get_seconds_from_date(post_date: str) -> int:
+    """Get number of seconds for Celery task countdown from user input in
+    Post's schedule endpoint"""
     date = datetime.fromisoformat(post_date)
     time_delta = date - datetime.now()
     return int(time_delta.total_seconds())
 
 
 def create_temp_file(media_file: InMemoryUploadedFile = None) -> str:
+    """Create temporary file for use in the Celery task"""
     if media_file:
         return default_storage.save(
             f"media/{media_file.name}", ContentFile(media_file.read())
@@ -172,6 +175,7 @@ def create_temp_file(media_file: InMemoryUploadedFile = None) -> str:
 
 
 def task_serializer(request) -> dict:
+    """Serialize data for parsing in Celery task"""
     task_data = {"user_id": request.user.id}
 
     post_date = request.data.pop("post_date")[0]
@@ -242,6 +246,7 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def schedule(self, request, pk=None):
+        """Endpoint for creating a scheduled Post"""
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             task_data = task_serializer(request)
