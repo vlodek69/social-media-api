@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import models
 
 
-def post_file_path(instance, filename):
+def post_file_path(instance, filename) -> str | os.PathLike:
     _, extension = os.path.splitext(filename)
     filename = f"post-{uuid.uuid4()}{extension}"
 
