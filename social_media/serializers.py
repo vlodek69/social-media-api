@@ -63,13 +63,30 @@ class CommentListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ("id", "created_at", "text", "media", "user", "likes_count", "url")
+        fields = (
+            "id",
+            "created_at",
+            "text",
+            "media",
+            "user",
+            "likes_count",
+            "url",
+        )
 
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ("id", "created_at", "text", "media", "user")
+        read_only_fields = ["user"]
+
+
+class PostScheduleSerializer(PostSerializer):
+    post_date = serializers.DateTimeField()
+
+    class Meta:
+        model = Post
+        fields = ("id", "created_at", "text", "media", "post_date", "user")
         read_only_fields = ["user"]
 
 

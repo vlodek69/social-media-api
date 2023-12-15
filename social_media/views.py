@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
 from pytz import timezone
 from rest_framework import mixins, status, viewsets
@@ -23,7 +26,9 @@ from social_media.serializers import (
     PostDetailSerializer,
     CommentDetailSerializer,
     PostListSerializer,
+    PostScheduleSerializer,
 )
+from social_media.tasks import schedule_post_create
 
 
 class UserViewSet(
@@ -151,6 +156,35 @@ class LikeMixin:
         return Response("Unliked!", status=status.HTTP_200_OK)
 
 
+def get_seconds_from_date(post_date: str) -> int:
+    date = datetime.fromisoformat(post_date)
+    time_delta = date - datetime.now()
+    return int(time_delta.total_seconds())
+
+
+def create_temp_file(media_file: InMemoryUploadedFile = None) -> str:
+    if media_file:
+        return default_storage.save(
+            f"media/{media_file.name}", ContentFile(media_file.read())
+        )
+
+    return ""
+
+
+def task_serializer(request) -> dict:
+    task_data = {"user_id": request.user.id}
+
+    post_date = request.data.pop("post_date")[0]
+    task_data["countdown"] = get_seconds_from_date(post_date)
+
+    media_file = request.data.pop("media")[0]
+    task_data["media_path"] = create_temp_file(media_file)
+
+    task_data["request_data"] = request.data
+
+    return task_data
+
+
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     queryset = Post.objects.all()
     permission_classes = (
@@ -166,7 +200,6 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
             comments__in=self.request.user.liked_comments.all()
         )
         return liked_comment_posts.union(liked_posts)
-
 
     def get_queryset(self):
         """Filter posts by subscriptions and likes"""
@@ -188,6 +221,9 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
+        if self.action == "schedule":
+            return PostScheduleSerializer
+
         if self.action in ("list", "subscriptions", "liked"):
             return PostListSerializer
 
@@ -198,6 +234,31 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
             return CommentSerializer
 
         return PostSerializer
+
+    @action(
+        methods=["POST"],
+        detail=False,
+        url_path="schedule",
+        permission_classes=[IsAuthenticated],
+    )
+    def schedule(self, request, pk=None):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            task_data = task_serializer(request)
+
+            schedule_post_create.apply_async(
+                (
+                    task_data["user_id"],
+                    task_data["request_data"],
+                    task_data["media_path"],
+                ),
+                countdown=task_data["countdown"],
+            )
+            return Response("Post is scheduled!", status=status.HTTP_200_OK)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
         methods=["POST"],
