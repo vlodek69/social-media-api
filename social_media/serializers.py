@@ -1,4 +1,10 @@
+from datetime import datetime
+from typing import Dict, Any
+
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import serializers
 
 from social_media.models import Post, Comment
@@ -130,3 +136,43 @@ class PostDetailSerializer(PostSerializer):
             "likes_count",
             "comments",
         )
+
+
+class TaskSerializer:
+    """Serializer for parsing data to Celery task in Post's 'schedule'
+    endpoint"""
+
+    @staticmethod
+    def get_seconds_from_date(post_date: str) -> int:
+        """Get number of seconds for Celery task countdown from user input in
+        Post's schedule endpoint"""
+        date = datetime.fromisoformat(post_date)
+        time_delta = date - datetime.now()
+        return int(time_delta.total_seconds())
+
+    @staticmethod
+    def create_temp_file(media_file: InMemoryUploadedFile = None) -> str:
+        """Create temporary file for use in the Celery task"""
+        if media_file:
+            return default_storage.save(
+                f"media/{media_file.name}", ContentFile(media_file.read())
+            )
+
+        return ""
+
+    @staticmethod
+    def serialize_task_data(request) -> Dict[str, Any]:
+        """Returns dict with serialized data"""
+        task_data = {"user_id": request.user.id}
+
+        post_date = request.data.pop("post_date")[0]
+        task_data["countdown"] = TaskSerializer.get_seconds_from_date(
+            post_date
+        )
+
+        media_file = request.data.pop("media")[0]
+        task_data["media_path"] = TaskSerializer.create_temp_file(media_file)
+
+        task_data["request_data"] = request.data
+
+        return task_data

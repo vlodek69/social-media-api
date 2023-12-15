@@ -26,7 +26,7 @@ from social_media.serializers import (
     PostDetailSerializer,
     CommentDetailSerializer,
     PostListSerializer,
-    PostScheduleSerializer,
+    PostScheduleSerializer, TaskSerializer,
 )
 from social_media.tasks import schedule_post_create
 
@@ -156,39 +156,6 @@ class LikeMixin:
         return Response("Unliked!", status=status.HTTP_200_OK)
 
 
-def get_seconds_from_date(post_date: str) -> int:
-    """Get number of seconds for Celery task countdown from user input in
-    Post's schedule endpoint"""
-    date = datetime.fromisoformat(post_date)
-    time_delta = date - datetime.now()
-    return int(time_delta.total_seconds())
-
-
-def create_temp_file(media_file: InMemoryUploadedFile = None) -> str:
-    """Create temporary file for use in the Celery task"""
-    if media_file:
-        return default_storage.save(
-            f"media/{media_file.name}", ContentFile(media_file.read())
-        )
-
-    return ""
-
-
-def task_serializer(request) -> dict:
-    """Serialize data for parsing in Celery task"""
-    task_data = {"user_id": request.user.id}
-
-    post_date = request.data.pop("post_date")[0]
-    task_data["countdown"] = get_seconds_from_date(post_date)
-
-    media_file = request.data.pop("media")[0]
-    task_data["media_path"] = create_temp_file(media_file)
-
-    task_data["request_data"] = request.data
-
-    return task_data
-
-
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     queryset = Post.objects.all()
     permission_classes = (
@@ -249,7 +216,7 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         """Endpoint for creating a scheduled Post"""
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            task_data = task_serializer(request)
+            task_data = TaskSerializer.serialize_task_data(request)
 
             schedule_post_create.apply_async(
                 (
