@@ -1,12 +1,17 @@
+from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+)
 from pytz import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
@@ -25,15 +30,23 @@ from social_media.serializers import (
     PostDetailSerializer,
     CommentDetailSerializer,
     PostListSerializer,
-    PostScheduleSerializer, TaskSerializer,
+    PostScheduleSerializer,
+    TaskSerializer,
+    CommentListSerializer,
 )
 from social_media.tasks import schedule_post_create
+
+
+class BasicPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 100
 
 
 class UserViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet
 ):
     queryset = get_user_model().objects.all()
+    pagination_class = BasicPagination
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -110,16 +123,14 @@ class UserViewSet(
                 "user",
                 type=OpenApiTypes.STR,
                 description=(
-                        "Filter by username or full name "
-                        "(ex. ?user=John+Doe)"
+                    "Filter by username or full name " "(ex. ?user=John+Doe)"
                 ),
             ),
             OpenApiParameter(
                 "location",
                 type=OpenApiTypes.STR,
                 description=(
-                        "Filter by user's location "
-                        "(ex. ?location=Kyiv)"
+                    "Filter by user's location " "(ex. ?location=Kyiv)"
                 ),
             ),
         ]
@@ -178,12 +189,19 @@ class LikeMixin:
         return Response("Unliked!", status=status.HTTP_200_OK)
 
 
+class CommentPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = "comment_page_size"
+    max_page_size = 100
+
+
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     queryset = Post.objects.all()
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
     )
+    pagination_class = BasicPagination
 
     def get_liked_posts(self, queryset):
         """Returns queryset with liked posts and posts that have liked
@@ -300,6 +318,27 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
             {"Cannot edit after 5 minutes"}, status=status.HTTP_403_FORBIDDEN
         )
 
+    @extend_schema(
+        parameters=[OpenApiParameter("page", OpenApiTypes.INT)],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        comments = Comment.objects.filter(post=instance).order_by(
+            "-created_at"
+        )
+        paginator = CommentPagination()
+        result_page = paginator.paginate_queryset(comments, request)
+
+        post_serializer = self.get_serializer(instance)
+        comments_serializer = CommentListSerializer(
+            result_page, many=True, context={"request": request}
+        )
+        data = post_serializer.data
+        data["comments"] = comments_serializer.data
+
+        return paginator.get_paginated_response(data)
+
 
 class CommentViewSet(
     LikeMixin,
@@ -313,6 +352,7 @@ class CommentViewSet(
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
     )
+    pagination_class = BasicPagination
 
     def get_user_liked_posts(self):
         return self.request.user.liked_comments
