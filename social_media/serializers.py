@@ -155,7 +155,7 @@ class TaskSerializer:
         """Create temporary file for use in the Celery task"""
         if media_file:
             return default_storage.save(
-                f"media/{media_file.name}", ContentFile(media_file.read())
+                f"temp/{media_file.name}", ContentFile(media_file.read())
             )
 
         return ""
@@ -164,6 +164,8 @@ class TaskSerializer:
     def serialize_task_data(request) -> Dict[str, Any]:
         """Returns dict with serialized data"""
         task_data = {"user_id": request.user.id}
+
+        setattr(request.data, "_mutable", True)
 
         post_date = request.data.pop("post_date")[0]
         task_data["countdown"] = TaskSerializer.get_seconds_from_date(
