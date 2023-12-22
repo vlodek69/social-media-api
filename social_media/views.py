@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
@@ -46,6 +45,7 @@ class UserViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet
 ):
     queryset = get_user_model().objects.all()
+    permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = BasicPagination
 
     def get_serializer_class(self):
