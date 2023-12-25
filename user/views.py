@@ -41,7 +41,8 @@ class UpdateUserProfilePictureView(ManageUserView):
 
 
 class BlacklistRefreshView(APIView):
-    def post(self, request):
+    """Endpoint for logging out. Blacklists refresh token."""
+    def get(self, request):
         token = RefreshToken(request.data.get("refresh"))
         token.blacklist()
         return Response("Token invalidated")
