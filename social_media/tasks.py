@@ -1,6 +1,3 @@
-# Create your tasks here
-# celery -A social_media_api worker -l info -P gevent
-
 from celery import shared_task
 from django.core.files.base import ContentFile
 
