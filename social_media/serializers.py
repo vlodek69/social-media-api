@@ -131,6 +131,14 @@ class BasicPagination(PageNumberPagination):
             "results": data,
         }
 
+def paginate_queryset(serializer, queryset, request):
+    serializer_instance = serializer(queryset, many=True,
+                                     context={"request": request})
+    paginator = BasicPagination()
+    paginated_data = paginator.paginate_queryset(serializer_instance.data,
+                                                 request)
+    return paginator.get_paginated_response(paginated_data)
+
 
 class UserWithPostsSerializer(serializers.HyperlinkedModelSerializer):
     subscribed_to = UserListSerializer(many=True)
@@ -155,32 +163,17 @@ class UserWithPostsSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_posts(self, obj):
         queryset = obj.posts.order_by("-created_at")
-
-        request = self.context.get("request")
-
-        serializer = PostListSerializer(
-            queryset, many=True, context={"request": request}
-        )
-
-        paginator = BasicPagination()
-
-        paginated_data = paginator.paginate_queryset(
-            queryset=serializer.data, request=request
-        )
-
-        result = paginator.get_paginated_response(paginated_data)
-
-        return result
-
+        return paginate_queryset(PostListSerializer, queryset,
+                                 self.context.get("request"))
 
 class CommentDetailSerializer(CommentSerializer):
     user = UserPostSerializer(read_only=True)
     post = PostListSerializer(read_only=True)
 
 
-class PostDetailSerializer(PostSerializer):
+class PostDetailSerializer(serializers.HyperlinkedModelSerializer):
     user = UserPostSerializer(read_only=True)
-    comments = CommentListSerializer(many=True)
+    comments = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -193,6 +186,11 @@ class PostDetailSerializer(PostSerializer):
             "likes_count",
             "comments",
         )
+
+    def get_comments(self, obj):
+        queryset = obj.comments.order_by("-created_at")
+        return paginate_queryset(CommentListSerializer, queryset,
+                                 self.context.get("request"))
 
 
 class TaskSerializer:

@@ -338,27 +338,6 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
             {"Cannot edit after 5 minutes"}, status=status.HTTP_403_FORBIDDEN
         )
 
-    @extend_schema(
-        parameters=[OpenApiParameter("page", OpenApiTypes.INT)],
-    )
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        comments = Comment.objects.filter(post=instance).order_by(
-            "-created_at"
-        )
-        paginator = CommentPagination()
-        result_page = paginator.paginate_queryset(comments, request)
-
-        post_serializer = self.get_serializer(instance)
-        comments_serializer = CommentListSerializer(
-            result_page, many=True, context={"request": request}
-        )
-        data = post_serializer.data
-        data["comments"] = comments_serializer.data
-
-        return paginator.get_paginated_response(data)
-
 
 class CommentViewSet(
     LikeMixin,
