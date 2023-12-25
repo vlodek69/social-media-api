@@ -45,7 +45,9 @@ class BasicPagination(PageNumberPagination):
 class UserViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet
 ):
-    queryset = get_user_model().objects.all()
+    queryset = get_user_model().objects.prefetch_related(
+        "liked_comments", "liked_posts"
+    )
     permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = BasicPagination
 
@@ -132,9 +134,6 @@ class UserViewSet(
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-        # return super().retrieve(request, *args, **kwargs)
-        # serializer = self.get_serializer(data=request.data)
-        # return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         parameters=[
@@ -215,7 +214,9 @@ class CommentPagination(PageNumberPagination):
 
 
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.prefetch_related(
+        "comments__users_liked", "users_liked", "comments__user"
+    ).select_related("user")
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
@@ -366,7 +367,9 @@ class CommentViewSet(
     mixins.DestroyModelMixin,
     GenericViewSet,
 ):
-    queryset = Comment.objects.all()
+    queryset = Comment.objects.prefetch_related(
+        "users_liked",
+    ).select_related("user", "post__user")
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
