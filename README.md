@@ -1,46 +1,53 @@
-# social-media-api
+# Social media API
 
-## Requirements:
+Service for making posts with images, following other users, liking and commenting their posts.
 
-### User Registration and Authentication:
-- Users should be able to register with their email and password to create an account.
-- Users should be able to login with their credentials and receive a token for authentication.
-- Users should be able to logout and invalidate their token.
+## Installation
 
-### User Profile:
-- Users should be able to create and update their profile, including profile picture, bio, and other details.
-- Users should be able to retrieve their own profile and view profiles of other users.
-- Users should be able to search for users by username or other criteria.
+Python3 and Docker must be already installed.
 
-### Follow/Unfollow:
-- Users should be able to follow and unfollow other users.
-- Users should be able to view the list of users they are following and the list of users following them.
+```shell
+git clone -b develop https://github.com/vlodek69/social-media-api
+cd social-media-api
+python -m venv venv
+venv\Scripts\activate (on Windows)
+source venv/bin/activate (on macOS)
+```
 
-### Post Creation and Retrieval:
-- Users should be able to create new posts with text content and optional media attachments (e.g., images). (Adding images is optional task)
-- Users should be able to retrieve their own posts and posts of users they are following.
-- Users should be able to retrieve posts by hashtags or other criteria.
+Copy .env-sample -> .env and populate with all required data.
 
-### Likes and Comments (Optional):
-- Users should be able to like and unlike posts. Users should be able to view the list of posts they have liked. Users should be able to add comments to posts and view comments on posts.
+```shell
+docker-compose up --build -d
+```
 
-### Schedule Post creation using Celery (Optional):
-- Add possibility to schedule Post creation (you can select the time to create the Post before creating of it).
+## How to use
 
-### API Permissions:
-- Only authenticated users should be able to perform actions such as creating posts, liking posts, and following/unfollowing users.
-- Users should only be able to update and delete their own posts and comments.
-- Users should only be able to update and delete their own profile.
+Once the server is up and running, create superuser:
 
-### API Documentation:
-- The API should be well-documented with clear instructions on how to use each endpoint.
-- The documentation should include sample API requests and responses for different endpoints.
+- First execute an interactive Bash shell on the app's container
+```shell
+doker exec -it <container_name> bash
+```
 
-### Technical Requirements:
-- Use Django and Django REST framework to build the API.
-- Use token-based authentication for user authentication.
-- Use appropriate serializers for data validation and representation.
-- Use appropriate views and viewsets for handling CRUD operations on models.
-- Use appropriate URL routing for different API endpoints.
-- Use appropriate permissions and authentication classes to implement API permissions.
-- Follow best practices for RESTful API design and documentation.
+- Then create superuser in the shell
+```shell
+python manage.py createsuperuser
+```
+
+See the documentation on `/api/doc/swagger/` endpoint.
+
+## Features:
+- User if able to register with their email, password, username and date of birth.
+- Authentication implemented using JWT. Ability to logout and invalidate their token.
+- Users are able to update their profile and add information like a profile picture, location, bio, website link.
+- Users are able to create posts with text and image, like and comment posts.
+- Posts can be updated only for 5 minutes after posting. Posts still can be deleted any time.
+- Can create scheduled posts. Scheduling implemented using Celery.
+- Users are able to subscribe to other users.
+- Filtering users by username, full name and location.
+- Retrieving only liked posts or subscription feed.
+- Swagger UI documentation.
+
+## Diagram
+
+![social_media](social-media-api.jpg)
