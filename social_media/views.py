@@ -32,6 +32,7 @@ from social_media.serializers import (
     PostScheduleSerializer,
     TaskSerializer,
     CommentListSerializer,
+    UserWithPostsSerializer,
 )
 from social_media.tasks import schedule_post_create
 
@@ -51,6 +52,9 @@ class UserViewSet(
     def get_serializer_class(self):
         if self.action == "retrieve":
             return UserDetailSerializer
+
+        if self.action == "with_posts":
+            return UserWithPostsSerializer
 
         if self.action in ["subscribe", "unsubscribe"]:
             return UserSubscriptionSerializer
@@ -116,6 +120,21 @@ class UserViewSet(
 
         user_subscriptions.remove(unsubscribe_from)
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
+
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="with-posts",
+        permission_classes=[IsAuthenticatedOrReadOnly],
+    )
+    def with_posts(self, request, pk=None):
+        """Endpoint for showing user's posts"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+        # return super().retrieve(request, *args, **kwargs)
+        # serializer = self.get_serializer(data=request.data)
+        # return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         parameters=[

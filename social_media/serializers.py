@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import serializers
+from rest_framework.pagination import PageNumberPagination
 
 from social_media.models import Post, Comment
 
@@ -28,7 +29,7 @@ class UserPostSerializer(UserListSerializer):
         fields = ("id", "profile_picture", "full_name", "username")
 
 
-class UserDetailSerializer(UserListSerializer):
+class UserDetailSerializer(serializers.ModelSerializer):
     subscribed_to = UserListSerializer(many=True)
     subscribers = UserListSerializer(many=True)
 
@@ -114,6 +115,62 @@ class PostListSerializer(PostSerializer):
             "likes_count",
             "url",
         )
+
+
+class BasicPagination(PageNumberPagination):
+    page_size = 5
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        return {
+            "links": {
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+            },
+            "count": self.page.paginator.count,
+            "results": data,
+        }
+
+
+class UserWithPostsSerializer(serializers.HyperlinkedModelSerializer):
+    subscribed_to = UserListSerializer(many=True)
+    subscribers = UserListSerializer(many=True)
+    posts = serializers.SerializerMethodField()
+
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "profile_picture",
+            "username",
+            "full_name",
+            "bio",
+            "location",
+            "website",
+            "subscribers_count",
+            "subscribers",
+            "subscribed_to",
+            "posts",
+        )
+
+    def get_posts(self, obj):
+        queryset = obj.posts.order_by("-created_at")
+
+        request = self.context.get("request")
+
+        serializer = PostListSerializer(
+            queryset, many=True, context={"request": request}
+        )
+
+        paginator = BasicPagination()
+
+        paginated_data = paginator.paginate_queryset(
+            queryset=serializer.data, request=request
+        )
+
+        result = paginator.get_paginated_response(paginated_data)
+
+        return result
 
 
 class CommentDetailSerializer(CommentSerializer):
