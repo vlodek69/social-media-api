@@ -50,7 +50,7 @@ def user_profile_picture_file_path(instance, filename):
     filename = f"{slugify(instance.username)}-{uuid.uuid4()}{extension}"
 
     return os.path.join(
-        f"uploads/users/{instance.username}/profile_picture/", filename
+        "uploads", "users", instance.username, "profile_picture", filename
     )
 
 

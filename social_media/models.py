@@ -10,7 +10,7 @@ def post_file_path(instance, filename) -> str | os.PathLike:
     filename = f"post-{uuid.uuid4()}{extension}"
 
     return os.path.join(
-        f"uploads/users/{instance.user.username}/posts/", filename
+        "uploads", "users", instance.user.username, "posts", filename
     )
 
 
