@@ -29,6 +29,7 @@ class BasePost(models.Model):
 
     @property
     def likes_count(self):
+        """uses_liked is a related name of User model field"""
         return self.users_liked.all().count()
 
 
