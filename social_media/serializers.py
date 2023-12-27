@@ -6,9 +6,9 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import serializers
-from rest_framework.pagination import PageNumberPagination
 
 from social_media.models import Post, Comment
+from social_media.paginators import paginate_queryset
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -117,29 +117,6 @@ class PostListSerializer(PostSerializer):
         )
 
 
-class BasicPagination(PageNumberPagination):
-    page_size = 5
-    max_page_size = 100
-
-    def get_paginated_response(self, data):
-        return {
-            "links": {
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-            },
-            "count": self.page.paginator.count,
-            "results": data,
-        }
-
-def paginate_queryset(serializer, queryset, request):
-    serializer_instance = serializer(queryset, many=True,
-                                     context={"request": request})
-    paginator = BasicPagination()
-    paginated_data = paginator.paginate_queryset(serializer_instance.data,
-                                                 request)
-    return paginator.get_paginated_response(paginated_data)
-
-
 class UserWithPostsSerializer(serializers.HyperlinkedModelSerializer):
     subscribed_to = UserListSerializer(many=True)
     subscribers = UserListSerializer(many=True)
@@ -162,9 +139,14 @@ class UserWithPostsSerializer(serializers.HyperlinkedModelSerializer):
         )
 
     def get_posts(self, obj):
-        queryset = obj.posts.order_by("-created_at")
-        return paginate_queryset(PostListSerializer, queryset,
-                                 self.context.get("request"))
+        queryset = (
+            obj.posts.prefetch_related("users_liked", "comments")
+            .order_by("-created_at")
+        )
+        return paginate_queryset(
+            PostListSerializer, queryset, self.context.get("request")
+        )
+
 
 class CommentDetailSerializer(CommentSerializer):
     user = UserPostSerializer(read_only=True)
@@ -189,8 +171,9 @@ class PostDetailSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_comments(self, obj):
         queryset = obj.comments.order_by("-created_at")
-        return paginate_queryset(CommentListSerializer, queryset,
-                                 self.context.get("request"))
+        return paginate_queryset(
+            CommentListSerializer, queryset, self.context.get("request")
+        )
 
 
 class TaskSerializer:

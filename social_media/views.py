@@ -10,7 +10,6 @@ from drf_spectacular.utils import (
 from pytz import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
@@ -19,6 +18,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from social_media.models import Post, Comment
+from social_media.paginators import ListPagination
 from social_media.permissions import IsOwnerOrReadOnly
 from social_media.serializers import (
     UserListSerializer,
@@ -31,15 +31,9 @@ from social_media.serializers import (
     PostListSerializer,
     PostScheduleSerializer,
     TaskSerializer,
-    CommentListSerializer,
     UserWithPostsSerializer,
 )
 from social_media.tasks import schedule_post_create
-
-
-class BasicPagination(PageNumberPagination):
-    page_size = 10
-    max_page_size = 100
 
 
 class UserViewSet(
@@ -49,7 +43,7 @@ class UserViewSet(
         "liked_comments", "liked_posts"
     )
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    pagination_class = BasicPagination
+    pagination_class = ListPagination
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -207,12 +201,6 @@ class LikeMixin:
         return Response("Unliked!", status=status.HTTP_200_OK)
 
 
-class CommentPagination(PageNumberPagination):
-    page_size = 5
-    page_size_query_param = "comment_page_size"
-    max_page_size = 100
-
-
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     queryset = Post.objects.prefetch_related(
         "comments__users_liked", "users_liked", "comments__user"
@@ -221,7 +209,7 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
     )
-    pagination_class = BasicPagination
+    pagination_class = ListPagination
 
     def get_liked_posts(self, queryset):
         """Returns queryset with liked posts and posts that have liked
@@ -353,7 +341,7 @@ class CommentViewSet(
         IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
     )
-    pagination_class = BasicPagination
+    pagination_class = ListPagination
 
     def get_user_liked_posts(self):
         return self.request.user.liked_comments
