@@ -51,9 +51,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 
 class UserSubscriptionSerializer(serializers.Serializer):
-    # user = serializers.PrimaryKeyRelatedField(
-    #     queryset=get_user_model().objects.all()
-    # )
     subscribe_to = serializers.PrimaryKeyRelatedField(
         queryset=get_user_model().objects.all()
     )
