@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Dict, Any
 
 from django.contrib.auth import get_user_model
@@ -6,6 +5,8 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import serializers
+from datetime import datetime, timedelta
+from django.utils import timezone as django_timezone
 
 from social_media.models import Post, Comment
 from social_media.paginators import paginate_queryset
@@ -94,7 +95,29 @@ class UserSubscriptionSerializer(serializers.Serializer):
             }
 
 
-class CommentSerializer(serializers.ModelSerializer):
+def can_edit(obj, minutes_to_edit=5):
+    """Returns True if Post/Comment was created less than 'minutes_to_edit'
+    minutes ago"""
+    return django_timezone.now() - obj.created_at < timedelta(
+        minutes=minutes_to_edit
+    )
+
+
+class EditableValidator:
+    def __call__(self, value):
+        if not can_edit(value):
+            raise serializers.ValidationError("Cannot edit after 5 minutes")
+
+
+class RestrictUpdateMixin:
+    def update(self, instance, validated_data):
+        """Allow update only for 5 minutes after Comment creation"""
+        # Validate if the Comment can be edited
+        EditableValidator()(instance)
+        return super().update(instance, validated_data)
+
+
+class CommentSerializer(RestrictUpdateMixin, serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ("id", "created_at", "text", "media", "user", "post")
@@ -120,7 +143,7 @@ class CommentListSerializer(serializers.ModelSerializer):
         )
 
 
-class PostSerializer(serializers.ModelSerializer):
+class PostSerializer(RestrictUpdateMixin, serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ("id", "created_at", "text", "media", "user")
@@ -166,7 +189,6 @@ class LikePostSerializer(serializers.Serializer):
 
 class LikeCommentSerializer(LikePostSerializer):
     obj = serializers.PrimaryKeyRelatedField(queryset=Comment.objects.all())
-
 
 
 class PostScheduleSerializer(PostSerializer):

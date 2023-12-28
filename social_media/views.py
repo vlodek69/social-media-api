@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
@@ -7,7 +5,6 @@ from drf_spectacular.utils import (
     OpenApiParameter,
     extend_schema,
 )
-from pytz import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
@@ -139,14 +136,6 @@ class UserViewSet(
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
-
-
-def can_edit(obj: Post | Comment, minutes_to_edit: int = 5) -> bool:
-    """Returns True if Post/Comment was created less than 'minutes_to_edit'
-    minutes ago"""
-    return datetime.now(tz=timezone("UTC")) - obj.created_at < timedelta(
-        minutes=minutes_to_edit
-    )
 
 
 class LikeMixin:
@@ -302,15 +291,6 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         """Endpoint for displaying liked posts"""
         return super().list(request)
 
-    def update(self, request, *args, **kwargs):
-        """Allow update only for 5 minutes after Post creation"""
-        if can_edit(self.get_object()):
-            return super().update(request, *args, **kwargs)
-
-        return Response(
-            {"Cannot edit after 5 minutes"}, status=status.HTTP_403_FORBIDDEN
-        )
-
 
 class CommentViewSet(
     LikeMixin,
@@ -339,12 +319,3 @@ class CommentViewSet(
             return LikeCommentSerializer
 
         return CommentSerializer
-
-    def update(self, request, *args, **kwargs):
-        """Allow update only for 5 minutes after Comment creation"""
-        if can_edit(self.get_object()):
-            return super().update(request, *args, **kwargs)
-
-        return Response(
-            {"Cannot edit after 5 minutes"}, status=status.HTTP_403_FORBIDDEN
-        )
