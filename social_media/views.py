@@ -31,7 +31,7 @@ from social_media.serializers import (
     PostListSerializer,
     PostScheduleSerializer,
     TaskSerializer,
-    UserWithPostsSerializer, LikeSerializer,
+    UserWithPostsSerializer, LikePostSerializer, LikeCommentSerializer,
 )
 from social_media.tasks import schedule_post_create
 
@@ -154,13 +154,13 @@ class LikeMixin:
         # This method should be overridden in the view set
         return self.request.user.liked_posts
 
-    def perform_like_action(self, post, request, action_type):
+    def perform_like_action(self, obj, request, action_type):
         serializer = self.get_serializer(
-            data={"post": post.id},
+            data={"obj": obj.id},
             context={"request": request, "action": action_type}
         )
         serializer.is_valid(raise_exception=True)
-        result = serializer.perform_action(post, request)
+        result = serializer.perform_action(obj, request)
         return Response(result["message"], status=status.HTTP_200_OK)
 
     @action(
@@ -171,8 +171,8 @@ class LikeMixin:
     )
     def like(self, request, pk=None):
         """Endpoint for adding post to your liked_posts"""
-        post = self.get_object()
-        return self.perform_like_action(post, request, action_type='like')
+        obj = self.get_object()
+        return self.perform_like_action(obj, request, action_type='like')
 
     @action(
         methods=["GET"],
@@ -182,8 +182,8 @@ class LikeMixin:
     )
     def unlike(self, request, pk=None):
         """Endpoint for removing post from your liked_posts"""
-        post = self.get_object()
-        return self.perform_like_action(post, request, action_type='unlike')
+        obj = self.get_object()
+        return self.perform_like_action(obj, request, action_type='unlike')
 
 
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
@@ -238,7 +238,7 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
             return CommentSerializer
 
         if self.action in ("like", "unlike"):
-            return LikeSerializer
+            return LikePostSerializer
 
         return PostSerializer
 
@@ -336,7 +336,7 @@ class CommentViewSet(
             return CommentDetailSerializer
 
         if self.action in ("like", "unlike"):
-            return LikeSerializer
+            return LikeCommentSerializer
 
         return CommentSerializer
 
