@@ -31,7 +31,7 @@ from social_media.serializers import (
     PostListSerializer,
     PostScheduleSerializer,
     TaskSerializer,
-    UserWithPostsSerializer,
+    UserWithPostsSerializer, LikeSerializer,
 )
 from social_media.tasks import schedule_post_create
 
@@ -74,15 +74,6 @@ class UserViewSet(
 
         return queryset
 
-    def get_serializer_context(self):
-        context = super(UserViewSet, self).get_serializer_context()
-        if self.action in ["subscribe", "unsubscribe"]:
-            subscribe_to = self.get_object()
-            context.update(
-                {"subscribe_to": subscribe_to, "action": self.action}
-            )
-        return context
-
     @action(
         methods=["GET"],
         detail=True,
@@ -91,14 +82,16 @@ class UserViewSet(
     )
     def subscribe(self, request, pk=None):
         """Endpoint for adding user to your subscriptions"""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        user_subscriptions = self.request.user.subscribed_to
         subscribe_to = self.get_object()
-        user_subscriptions.add(subscribe_to)
 
-        return Response("Subscribed!", status=status.HTTP_200_OK)
+        serializer = self.get_serializer(
+            data={"subscribe_to": subscribe_to.id},
+            context={"request": request, "action": "subscribe"}
+        )
+        serializer.is_valid(raise_exception=True)
+        result = serializer.perform_action(subscribe_to, request)
+
+        return Response(result["message"], status=status.HTTP_200_OK)
 
     @action(
         methods=["GET"],
@@ -108,14 +101,16 @@ class UserViewSet(
     )
     def unsubscribe(self, request, pk=None):
         """Endpoint for removing user from your subscriptions"""
-        serializer = self.get_serializer(data=request.data)
+        subscribe_to = self.get_object()
+
+        serializer = self.get_serializer(
+            data={"subscribe_to": subscribe_to.id},
+            context={"request": request, "action": "unsubscribe"}
+        )
         serializer.is_valid(raise_exception=True)
+        result = serializer.perform_action(subscribe_to, request)
 
-        user_subscriptions = self.request.user.subscribed_to
-        unsubscribe_from = self.get_object()
-        user_subscriptions.remove(unsubscribe_from)
-
-        return Response("Unsubscribed!", status=status.HTTP_200_OK)
+        return Response(result["message"], status=status.HTTP_200_OK)
 
     @action(
         methods=["GET"],
@@ -172,16 +167,16 @@ class LikeMixin:
     )
     def like(self, request, pk=None):
         """Endpoint for adding post to your liked_posts"""
-        user_liked_posts = self.get_user_liked_posts()
         post = self.get_object()
 
-        if post in user_liked_posts.all():
-            return Response(
-                "Already liked", status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = self.get_serializer(
+            data={"post": post.id},
+            context={"request": request, "action": "like"}
+        )
+        serializer.is_valid(raise_exception=True)
+        result = serializer.perform_action(post, request)
 
-        user_liked_posts.add(post)
-        return Response("Liked!", status=status.HTTP_200_OK)
+        return Response(result['message'], status=status.HTTP_200_OK)
 
     @action(
         methods=["GET"],
@@ -191,14 +186,16 @@ class LikeMixin:
     )
     def unlike(self, request, pk=None):
         """Endpoint for removing post from your liked_posts"""
-        user_liked_posts = self.get_user_liked_posts()
         post = self.get_object()
 
-        if post not in user_liked_posts.all():
-            return Response("Not liked", status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(
+            data={"post": post.id},
+            context={"request": request, "action": "unlike"}
+        )
+        serializer.is_valid(raise_exception=True)
+        result = serializer.perform_action(post, request)
 
-        user_liked_posts.remove(post)
-        return Response("Unliked!", status=status.HTTP_200_OK)
+        return Response(result['message'], status=status.HTTP_200_OK)
 
 
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
@@ -251,6 +248,9 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
 
         if self.action == "comment":
             return CommentSerializer
+
+        if self.action in ("like", "unlike"):
+            return LikeSerializer
 
         return PostSerializer
 
@@ -346,6 +346,9 @@ class CommentViewSet(
     def get_serializer_class(self):
         if self.action == "retrieve":
             return CommentDetailSerializer
+
+        if self.action in ("like", "unlike"):
+            return LikeSerializer
 
         return CommentSerializer
 
