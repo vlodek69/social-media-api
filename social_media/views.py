@@ -74,6 +74,15 @@ class UserViewSet(
 
         return queryset
 
+    def perform_subscribe_action(self, subscribe_to, request, action_type):
+        serializer = self.get_serializer(
+            data={"subscribe_to": subscribe_to.id},
+            context={"request": request, "action": action_type}
+        )
+        serializer.is_valid(raise_exception=True)
+        result = serializer.perform_action(subscribe_to, request)
+        return Response(result["message"], status=status.HTTP_200_OK)
+
     @action(
         methods=["GET"],
         detail=True,
@@ -83,15 +92,8 @@ class UserViewSet(
     def subscribe(self, request, pk=None):
         """Endpoint for adding user to your subscriptions"""
         subscribe_to = self.get_object()
-
-        serializer = self.get_serializer(
-            data={"subscribe_to": subscribe_to.id},
-            context={"request": request, "action": "subscribe"}
-        )
-        serializer.is_valid(raise_exception=True)
-        result = serializer.perform_action(subscribe_to, request)
-
-        return Response(result["message"], status=status.HTTP_200_OK)
+        return self.perform_subscribe_action(subscribe_to, request,
+                                             action_type="subscribe")
 
     @action(
         methods=["GET"],
@@ -102,15 +104,8 @@ class UserViewSet(
     def unsubscribe(self, request, pk=None):
         """Endpoint for removing user from your subscriptions"""
         subscribe_to = self.get_object()
-
-        serializer = self.get_serializer(
-            data={"subscribe_to": subscribe_to.id},
-            context={"request": request, "action": "unsubscribe"}
-        )
-        serializer.is_valid(raise_exception=True)
-        result = serializer.perform_action(subscribe_to, request)
-
-        return Response(result["message"], status=status.HTTP_200_OK)
+        return self.perform_subscribe_action(subscribe_to, request,
+                                             action_type="unsubscribe")
 
     @action(
         methods=["GET"],
@@ -159,6 +154,15 @@ class LikeMixin:
         # This method should be overridden in the view set
         return self.request.user.liked_posts
 
+    def perform_like_action(self, post, request, action_type):
+        serializer = self.get_serializer(
+            data={"post": post.id},
+            context={"request": request, "action": action_type}
+        )
+        serializer.is_valid(raise_exception=True)
+        result = serializer.perform_action(post, request)
+        return Response(result["message"], status=status.HTTP_200_OK)
+
     @action(
         methods=["GET"],
         detail=True,
@@ -168,15 +172,7 @@ class LikeMixin:
     def like(self, request, pk=None):
         """Endpoint for adding post to your liked_posts"""
         post = self.get_object()
-
-        serializer = self.get_serializer(
-            data={"post": post.id},
-            context={"request": request, "action": "like"}
-        )
-        serializer.is_valid(raise_exception=True)
-        result = serializer.perform_action(post, request)
-
-        return Response(result['message'], status=status.HTTP_200_OK)
+        return self.perform_like_action(post, request, action_type='like')
 
     @action(
         methods=["GET"],
@@ -187,15 +183,7 @@ class LikeMixin:
     def unlike(self, request, pk=None):
         """Endpoint for removing post from your liked_posts"""
         post = self.get_object()
-
-        serializer = self.get_serializer(
-            data={"post": post.id},
-            context={"request": request, "action": "unlike"}
-        )
-        serializer.is_valid(raise_exception=True)
-        result = serializer.perform_action(post, request)
-
-        return Response(result['message'], status=status.HTTP_200_OK)
+        return self.perform_like_action(post, request, action_type='unlike')
 
 
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
