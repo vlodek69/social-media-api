@@ -74,6 +74,15 @@ class UserViewSet(
 
         return queryset
 
+    def get_serializer_context(self):
+        context = super(UserViewSet, self).get_serializer_context()
+        if self.action in ["subscribe", "unsubscribe"]:
+            subscribe_to = self.get_object()
+            context.update(
+                {"subscribe_to": subscribe_to, "action": self.action}
+            )
+        return context
+
     @action(
         methods=["GET"],
         detail=True,
@@ -82,20 +91,13 @@ class UserViewSet(
     )
     def subscribe(self, request, pk=None):
         """Endpoint for adding user to your subscriptions"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         user_subscriptions = self.request.user.subscribed_to
         subscribe_to = self.get_object()
-
-        if subscribe_to in user_subscriptions.all():
-            return Response(
-                "Already subscribed", status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if subscribe_to == self.request.user:
-            return Response(
-                "Wil not subscribe to self", status=status.HTTP_400_BAD_REQUEST
-            )
-
         user_subscriptions.add(subscribe_to)
+
         return Response("Subscribed!", status=status.HTTP_200_OK)
 
     @action(
@@ -106,15 +108,13 @@ class UserViewSet(
     )
     def unsubscribe(self, request, pk=None):
         """Endpoint for removing user from your subscriptions"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         user_subscriptions = self.request.user.subscribed_to
         unsubscribe_from = self.get_object()
-
-        if unsubscribe_from not in user_subscriptions.all():
-            return Response(
-                "Not subscribed", status=status.HTTP_400_BAD_REQUEST
-            )
-
         user_subscriptions.remove(unsubscribe_from)
+
         return Response("Unsubscribed!", status=status.HTTP_200_OK)
 
     @action(
@@ -290,12 +290,9 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
         """Endpoint for creating new Comment with prefilled 'user' and 'post'
         fields"""
         comment = self.get_serializer(data=request.data)
-
-        if comment.is_valid():
-            comment.save(user=self.request.user, post=self.get_object())
-            return Response(comment.data, status=status.HTTP_200_OK)
-
-        return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
+        comment.is_valid(raise_exception=True)
+        comment.save(user=self.request.user, post=self.get_object())
+        return Response(comment.data, status=status.HTTP_200_OK)
 
     @action(
         methods=["GET"],

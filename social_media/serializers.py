@@ -54,6 +54,23 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ()
 
+    def validate(self, attrs):
+        action = self.context["action"]
+        user = self.context["request"].user
+        subscribe_to = self.context["subscribe_to"]
+
+        if action == "subscribe":
+            if subscribe_to in user.subscribed_to.all():
+                raise serializers.ValidationError("Already subscribed")
+
+            if subscribe_to == user:
+                raise serializers.ValidationError("Wil not subscribe to self")
+        elif action == "unsubscribe":
+            if subscribe_to not in user.subscribed_to.all():
+                raise serializers.ValidationError("Not subscribed")
+
+        return attrs
+
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -139,10 +156,9 @@ class UserWithPostsSerializer(serializers.HyperlinkedModelSerializer):
         )
 
     def get_posts(self, obj):
-        queryset = (
-            obj.posts.prefetch_related("users_liked", "comments")
-            .order_by("-created_at")
-        )
+        queryset = obj.posts.prefetch_related(
+            "users_liked", "comments"
+        ).order_by("-created_at")
         return paginate_queryset(
             PostListSerializer, queryset, self.context.get("request")
         )
