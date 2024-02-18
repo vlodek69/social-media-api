@@ -67,12 +67,6 @@ class User(AbstractUser):
     subscribed_to = models.ManyToManyField(
         "self", blank=True, symmetrical=False
     )
-    liked_posts = models.ManyToManyField(
-        Post, blank=True, related_name="users_liked"
-    )
-    liked_comments = models.ManyToManyField(
-        Comment, blank=True, related_name="users_liked"
-    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
