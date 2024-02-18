@@ -68,8 +68,7 @@ class UserSubscriptionSerializer(serializers.Serializer):
             if subscribe_to == request.user:
                 raise serializers.ValidationError("Wil not subscribe to self")
         elif (
-                action == "unsubscribe"
-                and subscribe_to not in user_subscriptions
+            action == "unsubscribe" and subscribe_to not in user_subscriptions
         ):
             raise serializers.ValidationError("Not subscribed")
 
@@ -82,13 +81,13 @@ class UserSubscriptionSerializer(serializers.Serializer):
             request.user.subscribed_to.add(subscribe_to)
             return {
                 "action": "subscribe",
-                "message": "Subscribed successfully."
+                "message": "Subscribed successfully.",
             }
         elif action == "unsubscribe":
             request.user.subscribed_to.remove(subscribe_to)
             return {
                 "action": "unsubscribe",
-                "message": "Unsubscribed successfully."
+                "message": "Unsubscribed successfully.",
             }
 
 
@@ -150,12 +149,16 @@ class PostSerializer(RestrictUpdateMixin, serializers.ModelSerializer):
 class LikePostSerializer(serializers.Serializer):
     obj = serializers.PrimaryKeyRelatedField(queryset=Post.objects.all())
 
+    class Meta:
+        read_only_fields = ["obj"]
+
     def validate_obj(self, obj):
         request = self.context.get("request")
         action = self.context.get("action")
 
         user_liked_objects = (
-            request.user.liked_posts.all() if isinstance(obj, Post)
+            request.user.liked_posts.all()
+            if isinstance(obj, Post)
             else request.user.liked_comments.all()
         )
 
