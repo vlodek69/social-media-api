@@ -29,8 +29,7 @@ from social_media.serializers import (
     PostScheduleSerializer,
     TaskSerializer,
     UserWithPostsSerializer,
-    LikePostSerializer,
-    LikeCommentSerializer,
+    LikeSerializer,
 )
 from social_media.tasks import schedule_post_create
 
@@ -148,9 +147,15 @@ class LikeMixin:
         return self.request.user.liked_posts
 
     def perform_like_action(self, obj, request, action_type):
+        is_post = isinstance(obj, Post)
         serializer = self.get_serializer(
-            data={"obj": obj.id},
-            context={"request": request, "action": action_type},
+            data={},
+            context={
+                "request": request,
+                "action": action_type,
+                "obj": obj.id,
+                "is_post": is_post,
+            },
         )
         serializer.is_valid(raise_exception=True)
         result = serializer.perform_action(obj, request)
@@ -192,7 +197,9 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     def get_liked_posts(self, queryset):
         """Returns queryset with liked posts and posts that have liked
         comments"""
-        liked_posts = self.request.user.liked_posts.all()
+        liked_posts = queryset.filter(
+            id__in=self.request.user.liked_posts.all()
+        )
         liked_comment_posts = queryset.filter(
             comments__in=self.request.user.liked_comments.all()
         )
@@ -231,7 +238,7 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
             return CommentSerializer
 
         if self.action in ("like", "unlike"):
-            return LikePostSerializer
+            return LikeSerializer
 
         return PostSerializer
 
@@ -316,6 +323,6 @@ class CommentViewSet(
             return CommentDetailSerializer
 
         if self.action in ("like", "unlike"):
-            return LikeCommentSerializer
+            return LikeSerializer
 
         return CommentSerializer

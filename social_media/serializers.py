@@ -146,49 +146,31 @@ class PostSerializer(RestrictUpdateMixin, serializers.ModelSerializer):
         read_only_fields = ["user"]
 
 
-class LikePostSerializer(serializers.Serializer):
-    obj = serializers.PrimaryKeyRelatedField(queryset=Post.objects.all())
-
-    class Meta:
-        read_only_fields = ["obj"]
-
-    def validate_obj(self, obj):
+class LikeSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        """Check if object is already liked/not liked by user"""
+        obj_id = self.context.get("obj")
+        obj = (Post.objects.get(id=obj_id) if self.context.get("is_post")
+               else Comment.objects.get(id=obj_id))
         request = self.context.get("request")
         action = self.context.get("action")
 
-        user_liked_objects = (
-            request.user.liked_posts.all()
-            if isinstance(obj, Post)
-            else request.user.liked_comments.all()
-        )
-
-        if obj in user_liked_objects and action == "like":
+        if request.user in obj.users_liked.all() and action == "like":
             raise serializers.ValidationError("Already liked")
-        elif obj not in user_liked_objects and action == "unlike":
+        elif request.user not in obj.users_liked.all() and action == "unlike":
             raise serializers.ValidationError("Not liked")
 
-        return obj
+        return attrs
 
     def perform_action(self, obj, request):
         action = self.context.get("action")
 
-        # Check if the post is already liked to determine the action
         if action == "unlike":
-            if isinstance(obj, Post):
-                request.user.liked_posts.remove(obj)
-            else:
-                request.user.liked_comments.remove(obj)
+            obj.users_liked.remove(request.user)
             return {"action": "unlike", "message": "Unliked successfully."}
         elif action == "like":
-            if isinstance(obj, Post):
-                request.user.liked_posts.add(obj)
-            else:
-                request.user.liked_comments.add(obj)
+            obj.users_liked.add(request.user)
             return {"action": "like", "message": "Liked successfully."}
-
-
-class LikeCommentSerializer(LikePostSerializer):
-    obj = serializers.PrimaryKeyRelatedField(queryset=Comment.objects.all())
 
 
 class PostScheduleSerializer(PostSerializer):
