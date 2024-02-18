@@ -142,10 +142,6 @@ class UserViewSet(
 
 
 class LikeMixin:
-    def get_user_liked_posts(self):
-        # This method should be overridden in the view set
-        return self.request.user.liked_posts
-
     def perform_like_action(self, obj, request, action_type):
         is_post = isinstance(obj, Post)
         serializer = self.get_serializer(
@@ -314,9 +310,6 @@ class CommentViewSet(
         IsOwnerOrReadOnly,
     )
     pagination_class = ListPagination
-
-    def get_user_liked_posts(self):
-        return self.request.user.liked_comments
 
     def get_serializer_class(self):
         if self.action == "retrieve":
