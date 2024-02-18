@@ -143,7 +143,7 @@ class UserViewSet(
 
 class LikeMixin:
     def perform_like_action(self, obj, request, action_type):
-        is_post = isinstance(obj, Post)
+        is_post = isinstance(obj, Post)  # to distinguish Post and Comment
         serializer = self.get_serializer(
             data={},
             context={
