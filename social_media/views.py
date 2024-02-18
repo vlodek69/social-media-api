@@ -244,22 +244,18 @@ class PostViewSet(LikeMixin, viewsets.ModelViewSet):
     def schedule(self, request, pk=None):
         """Endpoint for creating a scheduled Post"""
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            task_data = TaskSerializer.serialize_task_data(request)
+        serializer.is_valid(raise_exception=True)
+        task_data = TaskSerializer.serialize_task_data(request)
 
-            schedule_post_create.apply_async(
-                (
-                    task_data["user_id"],
-                    task_data["request_data"],
-                    task_data["media_path"],
-                ),
-                countdown=task_data["countdown"],
-            )
-            return Response("Post is scheduled!", status=status.HTTP_200_OK)
-        else:
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        schedule_post_create.apply_async(
+            (
+                task_data["user_id"],
+                task_data["request_data"],
+                task_data["media_path"],
+            ),
+            countdown=task_data["countdown"],
+        )
+        return Response("Post is scheduled!", status=status.HTTP_200_OK)
 
     @action(
         methods=["POST"],
