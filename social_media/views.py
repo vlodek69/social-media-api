@@ -28,7 +28,9 @@ from social_media.serializers import (
     PostListSerializer,
     PostScheduleSerializer,
     TaskSerializer,
-    UserWithPostsSerializer, LikePostSerializer, LikeCommentSerializer,
+    UserWithPostsSerializer,
+    LikePostSerializer,
+    LikeCommentSerializer,
 )
 from social_media.tasks import schedule_post_create
 
@@ -74,14 +76,14 @@ class UserViewSet(
     def perform_subscribe_action(self, subscribe_to, request, action_type):
         serializer = self.get_serializer(
             data={"subscribe_to": subscribe_to.id},
-            context={"request": request, "action": action_type}
+            context={"request": request, "action": action_type},
         )
         serializer.is_valid(raise_exception=True)
         result = serializer.perform_action(subscribe_to, request)
         return Response(result["message"], status=status.HTTP_200_OK)
 
     @action(
-        methods=["GET"],
+        methods=["POST"],
         detail=True,
         url_path="subscribe",
         permission_classes=[IsAuthenticated],
@@ -89,11 +91,12 @@ class UserViewSet(
     def subscribe(self, request, pk=None):
         """Endpoint for adding user to your subscriptions"""
         subscribe_to = self.get_object()
-        return self.perform_subscribe_action(subscribe_to, request,
-                                             action_type="subscribe")
+        return self.perform_subscribe_action(
+            subscribe_to, request, action_type="subscribe"
+        )
 
     @action(
-        methods=["GET"],
+        methods=["POST"],
         detail=True,
         url_path="unsubscribe",
         permission_classes=[IsAuthenticated],
@@ -101,8 +104,9 @@ class UserViewSet(
     def unsubscribe(self, request, pk=None):
         """Endpoint for removing user from your subscriptions"""
         subscribe_to = self.get_object()
-        return self.perform_subscribe_action(subscribe_to, request,
-                                             action_type="unsubscribe")
+        return self.perform_subscribe_action(
+            subscribe_to, request, action_type="unsubscribe"
+        )
 
     @action(
         methods=["GET"],
@@ -146,14 +150,14 @@ class LikeMixin:
     def perform_like_action(self, obj, request, action_type):
         serializer = self.get_serializer(
             data={"obj": obj.id},
-            context={"request": request, "action": action_type}
+            context={"request": request, "action": action_type},
         )
         serializer.is_valid(raise_exception=True)
         result = serializer.perform_action(obj, request)
         return Response(result["message"], status=status.HTTP_200_OK)
 
     @action(
-        methods=["GET"],
+        methods=["POST"],
         detail=True,
         url_path="like",
         permission_classes=[IsAuthenticated],
@@ -161,10 +165,10 @@ class LikeMixin:
     def like(self, request, pk=None):
         """Endpoint for adding post to your liked_posts"""
         obj = self.get_object()
-        return self.perform_like_action(obj, request, action_type='like')
+        return self.perform_like_action(obj, request, action_type="like")
 
     @action(
-        methods=["GET"],
+        methods=["POST"],
         detail=True,
         url_path="unlike",
         permission_classes=[IsAuthenticated],
@@ -172,7 +176,7 @@ class LikeMixin:
     def unlike(self, request, pk=None):
         """Endpoint for removing post from your liked_posts"""
         obj = self.get_object()
-        return self.perform_like_action(obj, request, action_type='unlike')
+        return self.perform_like_action(obj, request, action_type="unlike")
 
 
 class PostViewSet(LikeMixin, viewsets.ModelViewSet):
