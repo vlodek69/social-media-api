@@ -23,6 +23,9 @@ class BasePost(models.Model):
         on_delete=models.CASCADE,
         related_name="%(class)ss",
     )
+    users_liked = models.ManyToManyField(
+        to=settings.AUTH_USER_MODEL, related_name="liked_%(class)ss"
+    )
 
     class Meta:
         abstract = True
